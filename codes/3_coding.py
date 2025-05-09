@@ -1,4 +1,4 @@
-from openai import OpenAI
+import google.generativeai as genai
 import json
 import os
 from tqdm import tqdm
@@ -19,7 +19,8 @@ parser.add_argument('--output_dir',type=str, default="")
 parser.add_argument('--output_repo_dir',type=str, default="")
 
 args    = parser.parse_args()
-client = OpenAI(api_key = os.environ["OPENAI_API_KEY"])
+genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+model = genai.GenerativeModel('gemini-pro')
 
 paper_name = args.paper_name
 gpt_version = args.gpt_version
@@ -134,18 +135,11 @@ Next, you must write only the "{todo_file_name}".
 
 
 def api_call(msg):
-    if "o3-mini" in gpt_version:
-        completion = client.chat.completions.create(
-            model=gpt_version, 
-            reasoning_effort="high",
-            messages=msg
-        )
-    else:
-        completion = client.chat.completions.create(
-            model=gpt_version, 
-            messages=msg
-        )
-    return completion
+    chat = model.start_chat()
+    for message in msg:
+        if message["role"] == "user":
+            response = chat.send_message(message["content"])
+    return response
     
 
 # testing for checking

@@ -1,4 +1,4 @@
-from openai import OpenAI
+import google.generativeai as genai
 import json
 from tqdm import tqdm
 import argparse
@@ -17,7 +17,8 @@ parser.add_argument('--output_dir',type=str, default="")
 
 args    = parser.parse_args()
 
-client = OpenAI(api_key = os.environ["OPENAI_API_KEY"])
+genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+model = genai.GenerativeModel('gemini-pro')
 
 paper_name = args.paper_name
 gpt_version = args.gpt_version
@@ -70,7 +71,7 @@ The response should give us a strong roadmap, making it easier to write the code
 file_list_msg = [
         {"role": "user", "content": """Your goal is to create a concise, usable, and complete software system design for reproducing the paper's method. Use appropriate open-source libraries and keep the overall architecture simple.
              
-Based on the plan for reproducing the paper’s main method, please design a concise, usable, and complete software system. 
+Based on the plan for reproducing the paper's main method, please design a concise, usable, and complete software system. 
 Keep the architecture simple and make effective use of open-source libraries.
 
 -----
@@ -110,7 +111,7 @@ task_list_msg = [
         {'role': 'user', 'content': """Your goal is break down tasks according to PRD/technical design, generate a task list, and analyze task dependencies. 
 You will break down tasks, analyze dependencies.
              
-You outline a clear PRD/technical design for reproducing the paper’s method and experiments. 
+You outline a clear PRD/technical design for reproducing the paper's method and experiments. 
 
 Now, let's break down tasks according to PRD/technical design, generate a task list, and analyze task dependencies.
 The Logic Analysis should not only consider the dependencies between files but also provide detailed descriptions to assist in writing the code needed to reproduce the paper.
@@ -214,19 +215,11 @@ training:
     }]
 
 def api_call(msg, gpt_version):
-    if "o3-mini" in gpt_version:
-        completion = client.chat.completions.create(
-            model=gpt_version, 
-            reasoning_effort="high",
-            messages=msg
-        )
-    else:
-        completion = client.chat.completions.create(
-            model=gpt_version, 
-            messages=msg
-        )
-
-    return completion 
+    chat = model.start_chat()
+    for message in msg:
+        if message["role"] == "user":
+            response = chat.send_message(message["content"])
+    return response
 
 responses = []
 trajectories = []

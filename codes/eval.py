@@ -1,4 +1,4 @@
-from openai import OpenAI
+import google.generativeai as genai
 import json
 import os
 import sys
@@ -6,11 +6,16 @@ import argparse
 from utils import read_python_files, extract_planning, content_to_json, \
         num_tokens_from_messages, read_all_files, extract_json_from_string, get_now_str, print_log_cost
 
-client = OpenAI(api_key = os.environ["OPENAI_API_KEY"])
+genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+model = genai.GenerativeModel('gemini-pro')
 
 def api_call(request_json):
-    completion = client.chat.completions.create(**request_json)
-    return completion
+    messages = request_json["messages"]
+    chat = model.start_chat()
+    for msg in messages:
+        if msg["role"] == "user":
+            response = chat.send_message(msg["content"])
+    return response
 
 def main(args):
 
